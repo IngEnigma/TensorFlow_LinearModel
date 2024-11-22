@@ -46,7 +46,10 @@ jobs:
       run: docker cp linear-model/1 serving_base:/models/${{secrets.MODEL_NAME}}
       
     - name: Construir imagen personalizada
-      run: docker commit --change "ENV MODEL_NAME ${{secrets.MODEL_NAME}}" serving_base ${{secrets.DOCKER_USER}}/tensorflow-${{secrets.MODEL_NAME}}:${{ github.sha }}
+      run: docker commit --change "ENV MODEL_NAME test_model" serving_base ${{secrets.DOCKER_USER}}/tensorflow-test:${{ github.sha }}
   
+    - name: Verificar imagen generada
+      run: docker images
+    
     - name: Publicar imagen en Docker Hub
-      run: docker push ${{secrets.DOCKER_USER}}/tensorflow-${{secrets.MODEL_NAME}}:${{ github.sha }}
+      run: docker push ${{secrets.DOCKER_USER}}/tensorflow-test:${{ github.sha }}
