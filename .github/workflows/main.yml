@@ -1,0 +1,48 @@
+name: Linear Model
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: adsoft/aiops:latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Instalar requerimientos
+      run: pip install -r requirements.txt
+      
+    - name: Ejecutar modelo
+      run: python linear_model.py
+    
+    - name: Verificar modelo generado
+      run: |
+        echo "Modelo esperado en: linear-model/1"
+        ls -R linear-model/1 || true
+        if [ ! -d "linear-model/1" ]; then
+          echo "ERROR: El modelo no existe en la ruta esperada: linear-model/1"
+          exit 1
+        fi
+
+    - name: Docker Login
+      env:
+        DOCKER_USER: ${{secrets.DOCKER_USER}}
+        DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
+      run: |
+        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD 
+        
+    - name: Descargar y ejecutar imagen base
+      run: docker run -d --name serving_base tensorflow/serving
+
+    - name: Copiar modelo al contenedor
+      run: docker cp linear-model/1 serving_base:/models/${{secrets.MODEL_NAME}}
+      
+    - name: Construir imagen personalizada
+      run: docker commit --change "ENV MODEL_NAME ${{secrets.MODEL_NAME}}" serving_base ${{secrets.DOCKER_USER}}/tensorflow-${{secrets.MODEL_NAME}}:${{ github.sha }}
+  
+    - name: Publicar imagen en Docker Hub
+      run: docker push ${{secrets.DOCKER_USER}}/tensorflow-${{secrets.MODEL_NAME}}:${{ github.sha }}
