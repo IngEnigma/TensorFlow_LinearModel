@@ -37,6 +37,10 @@ jobs:
         
     - name: Descargar y ejecutar imagen base
       run: docker run -d --name serving_base tensorflow/serving
+    
+    - name: Verificar contenedor base
+      run: |
+        docker ps | grep serving_base || (echo "ERROR: El contenedor 'serving_base' no está corriendo" && exit 1)
 
     - name: Copiar modelo al contenedor
       run: docker cp linear-model/1 serving_base:/models/${{secrets.MODEL_NAME}}
